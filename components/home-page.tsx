@@ -1,9 +1,13 @@
+"use client"
+
 import {
   Search,
   BookOpen,
   Home,
   Briefcase,
   Gift,
+  Utensils,
+  Phone,
   Star,
   MapPin,
   Users,
@@ -17,14 +21,80 @@ import {
   Calendar,
   Building,
 } from "lucide-react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Link from "next/link"
+import ExamsMegaMenu from "@/components/exams/ExamsMegaMenu"
+import UpcomingExamsHome from "@/components/exams/UpcomingExamsHome"
+import UserMenu from "@/components/user-menu"
+import { useAuth } from "@/components/auth-context"
 
 export default function HomePage() {
+  const { user } = useAuth()
+  const [showSearch, setShowSearch] = useState(false)
+  const [searchText, setSearchText] = useState("")
+  // Used Books carousel state
+  const booksCarouselRef = useRef<HTMLDivElement | null>(null)
+  const [booksPaused, setBooksPaused] = useState(false)
+  const books = [
+    { title: "Introduction to Algorithms", price: "₹899", condition: "Good", rating: 4.5, seller: "Amit K." },
+    { title: "Operating Systems", price: "₹650", condition: "Excellent", rating: 4.8, seller: "Neha R." },
+    { title: "Computer Networks", price: "₹750", condition: "Good", rating: 4.6, seller: "Rohit S." },
+    { title: "Software Engineering", price: "₹550", condition: "Fair", rating: 4.3, seller: "Kavya M." },
+  ] as const
+
+  // Filters for used books
+  const [bookQuery, setBookQuery] = useState("")
+  const [bookCondition, setBookCondition] = useState<string>("all")
+  const [bookSort, setBookSort] = useState<string>("relevance")
+
+  const filteredBooks = useMemo(() => {
+    const q = bookQuery.trim().toLowerCase()
+    let arr = books.filter((b) => {
+      const matchesQ = q ? b.title.toLowerCase().includes(q) || b.seller.toLowerCase().includes(q) : true
+      const matchesC = bookCondition === "all" ? true : b.condition.toLowerCase() === bookCondition
+      return matchesQ && matchesC
+    })
+    // Sorting
+    if (bookSort === "price-asc" || bookSort === "price-desc") {
+      const toNum = (p: string) => parseInt(p.replace(/[^0-9]/g, ""), 10)
+      arr = [...arr].sort((a, b) => (toNum(a.price) - toNum(b.price)) * (bookSort === "price-asc" ? 1 : -1))
+    } else if (bookSort === "rating-desc") {
+      arr = [...arr].sort((a, b) => b.rating - a.rating)
+    }
+    return arr
+  }, [books, bookQuery, bookCondition, bookSort])
+
+  // Reset scroll when list changes
+  useEffect(() => {
+    const el = booksCarouselRef.current
+    if (el) el.scrollLeft = 0
+  }, [filteredBooks.length, bookQuery, bookCondition, bookSort])
+
+  // Auto-scroll the books row and loop seamlessly
+  useEffect(() => {
+    let raf = 0
+    const speed = 0.6 // pixels per frame
+    const step = () => {
+      const el = booksCarouselRef.current
+      if (el && !booksPaused) {
+        el.scrollLeft += speed
+        // Loop when we've scrolled through first set
+        const half = el.scrollWidth / 2
+        if (el.scrollLeft >= half) {
+          // Seamless loop: shift back by half, maintaining visual continuity
+          el.scrollLeft -= half
+        }
+      }
+      raf = requestAnimationFrame(step)
+    }
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+  }, [booksPaused])
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation Bar */}
@@ -32,22 +102,16 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-            <div className="flex items-center space-x-2">
+            <Link href="/" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <BookOpen className="w-5 h-5 text-primary-foreground" />
               </div>
               <span className="text-xl font-bold text-foreground">CampusHub</span>
-            </div>
+            </Link>
 
             {/* Main Menu */}
             <div className="hidden md:flex items-center space-x-8">
-              <Link
-                href="/notes"
-                className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors"
-              >
-                <BookOpen className="w-4 h-4" />
-                <span>Notes</span>
-              </Link>
+              <ExamsMegaMenu />
               <Link
                 href="/books"
                 className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors"
@@ -68,9 +132,13 @@ export default function HomePage() {
               >
                 <Briefcase className="w-4 h-4" />
                 <span>Jobs</span>
-                <Badge variant="secondary" className="text-xs">
-                  Phase 2
-                </Badge>
+              </Link>
+              <Link
+                href="/tiffin"
+                className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors"
+              >
+                <Utensils className="w-4 h-4" />
+                <span>Tiffin Services</span>
               </Link>
               <a
                 href="#deals"
@@ -78,34 +146,28 @@ export default function HomePage() {
               >
                 <Gift className="w-4 h-4" />
                 <span>Student Deals</span>
-                <Badge variant="secondary" className="text-xs">
-                  Phase 2
-                </Badge>
               </a>
             </div>
 
             {/* Right Side */}
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm">
+              {showSearch && (
+                <Input
+                  className="w-40 sm:w-56 md:w-64 transition-all"
+                  placeholder="Search..."
+                  autoFocus
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Escape") setShowSearch(false) }}
+                />
+              )}
+              <Button variant="ghost" size="sm" onClick={() => setShowSearch((v) => !v)} aria-label="Toggle search">
                 <Search className="w-4 h-4" />
               </Button>
-              <Link href="/subscribe">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
-                >
-                  Subscribe
-                </Button>
-              </Link>
-              <Link href="/auth/login">
-                <Button variant="outline" size="sm">
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/auth/signup">
-                <Button size="sm">Sign Up</Button>
-              </Link>
+              {user && (
+                <Button asChild size="sm"><Link href="/subscribe">Subscribe</Link></Button>
+              )}
+              <UserMenu />
             </div>
           </div>
         </div>
@@ -144,13 +206,17 @@ export default function HomePage() {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="text-lg px-8">
-              <TrendingUp className="w-5 h-5 mr-2" />
-              Upload Notes → Earn Credits
+            <Button asChild size="lg" className="text-lg px-8">
+              <Link href="/notes/upload" className="inline-flex items-center">
+                <TrendingUp className="w-5 h-5 mr-2" />
+                Upload Notes → Earn Credits
+              </Link>
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 bg-transparent">
-              <Home className="w-5 h-5 mr-2" />
-              List Your Hostel Free
+            <Button asChild variant="outline" size="lg" className="text-lg px-8 bg-transparent">
+              <Link href="/hostels/list" className="inline-flex items-center">
+                <Home className="w-5 h-5 mr-2" />
+                List Your Hostel Free
+              </Link>
             </Button>
           </div>
         </div>
@@ -165,6 +231,95 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Upcoming Exams Strip */}
+      <UpcomingExamsHome />
+
+      {/* Tiffin Services Section */}
+      <section id="tiffin" className="py-16 px-4 sm:px-6 lg:px-8 bg-muted/30">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h2 className="text-3xl font-bold text-foreground mb-2">🍱 Tiffin Services</h2>
+              <p className="text-muted-foreground">Home-cooked meals and affordable plans near your campus</p>
+            </div>
+            <Link href="/tiffin">
+              <Button className="bg-primary hover:bg-primary/90">View All Tiffin Services</Button>
+            </Link>
+          </div>
+
+          {/* Quick Filters */}
+          <div className="mb-6 flex flex-wrap items-center gap-3">
+            <Select defaultValue="all">
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Diet" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="veg">Vegetarian</SelectItem>
+                <SelectItem value="nonveg">Non-Veg</SelectItem>
+                <SelectItem value="jain">Jain</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select defaultValue="distance">
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Sort By" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="distance">Closest First</SelectItem>
+                <SelectItem value="price">Price: Low to High</SelectItem>
+                <SelectItem value="rating">Rating: High to Low</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { id: "maas-kitchen", name: "Maa's Kitchen", diet: "Veg", price: 80, rating: 4.7, distanceKm: 0.6, phone: "+919000011111" },
+              { id: "healthy-bites", name: "Healthy Bites", diet: "Veg/Jain", price: 95, rating: 4.5, distanceKm: 1.1, phone: "+919000022222" },
+              { id: "spicebox", name: "SpiceBox", diet: "Veg/Non-Veg", price: 110, rating: 4.6, distanceKm: 0.9, phone: "+919000033333" },
+            ].map((svc) => {
+              const waMsg = encodeURIComponent(`Hi, I'm interested in ${svc.name} tiffin service.`)
+              const wa = `https://wa.me/${svc.phone.replace(/[^0-9]/g, "")}?text=${waMsg}`
+              return (
+                <Card key={svc.id} className="hover:shadow-lg transition-shadow">
+                  <Link href={`/tiffin/${svc.id}`}>
+                    <div className="aspect-video bg-muted rounded-t-lg flex items-center justify-center">
+                      <Utensils className="w-10 h-10 text-muted-foreground" />
+                    </div>
+                  </Link>
+                  <CardContent className="p-4 space-y-2">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <Link href={`/tiffin/${svc.id}`} className="font-semibold hover:underline">{svc.name}</Link>
+                        <p className="text-xs text-muted-foreground">{svc.diet}</p>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                        <span className="text-sm font-medium">{svc.rating}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium text-primary">₹{svc.price}/meal</span>
+                      <div className="flex items-center text-muted-foreground">
+                        <MapPin className="w-4 h-4 mr-1" />
+                        <span>{svc.distanceKm} km</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <Link href={`/tiffin/${svc.id}?plan=trial`}><Button size="sm" variant="outline" className="bg-transparent">Try 1-Day</Button></Link>
+                      <Link href={`/tiffin/${svc.id}?plan=weekly`}><Button size="sm">Subscribe Weekly</Button></Link>
+                      <a href={wa} target="_blank" rel="noopener noreferrer" className="ml-auto">
+                        <Button size="sm" variant="outline" className="bg-transparent"><Phone className="w-4 h-4 mr-2" /> WhatsApp</Button>
+                      </a>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* Jobs/Internships Section */}
       <section id="jobs" className="py-16 px-4 sm:px-6 lg:px-8 bg-muted/30">
         <div className="max-w-7xl mx-auto">
@@ -172,9 +327,6 @@ export default function HomePage() {
             <div>
               <h2 className="text-3xl font-bold text-foreground mb-2">💼 Jobs/Internships</h2>
               <p className="text-muted-foreground">Opportunities that fit your student schedule</p>
-              <Badge variant="secondary" className="mt-2">
-                Coming in Phase 2
-              </Badge>
             </div>
             <Link href="/jobs">
               <Button className="bg-primary hover:bg-primary/90">View All Jobs</Button>
@@ -569,9 +721,11 @@ export default function HomePage() {
               <p className="text-muted-foreground">Quality books at student-friendly prices</p>
             </div>
             <div className="flex items-center space-x-4">
-              <Button variant="outline" className="text-primary bg-transparent">
-                <Gift className="w-4 h-4 mr-2" />
-                Sell Your Book
+              <Button asChild variant="outline" className="text-primary bg-transparent">
+                <Link href="/books/sell" className="inline-flex items-center">
+                  <Gift className="w-4 h-4 mr-2" />
+                  Sell Your Book
+                </Link>
               </Button>
               <Link href="/books">
                 <Button className="bg-primary hover:bg-primary/90">View All Books</Button>
@@ -579,37 +733,73 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { title: "Introduction to Algorithms", price: "₹899", condition: "Good", rating: 4.5, seller: "Amit K." },
-              { title: "Operating Systems", price: "₹650", condition: "Excellent", rating: 4.8, seller: "Neha R." },
-              { title: "Computer Networks", price: "₹750", condition: "Good", rating: 4.6, seller: "Rohit S." },
-              { title: "Software Engineering", price: "₹550", condition: "Fair", rating: 4.3, seller: "Kavya M." },
-            ].map((book, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
-                <div className="aspect-[3/4] bg-muted rounded-t-lg">
-                  <img
-                    src={`/abstract-geometric-shapes.png?height=300&width=225&query=${book.title} textbook cover`}
-                    alt={book.title}
-                    className="w-full h-full object-cover rounded-t-lg"
-                  />
-                </div>
-                <CardContent className="p-4">
-                  <h3 className="font-semibold text-sm mb-2 line-clamp-2">{book.title}</h3>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-lg font-bold text-primary">{book.price}</span>
-                    <Badge variant={book.condition === "Excellent" ? "default" : "secondary"}>{book.condition}</Badge>
+          {/* Filters */}
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <Input
+              placeholder="Search books or sellers"
+              value={bookQuery}
+              onChange={(e) => setBookQuery(e.target.value)}
+              className="w-full sm:w-64"
+            />
+            <Select value={bookCondition} onValueChange={setBookCondition}>
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="Condition" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Conditions</SelectItem>
+                <SelectItem value="excellent">Excellent</SelectItem>
+                <SelectItem value="good">Good</SelectItem>
+                <SelectItem value="fair">Fair</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={bookSort} onValueChange={setBookSort}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Sort" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="relevance">Relevance</SelectItem>
+                <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                <SelectItem value="rating-desc">Rating: High to Low</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Horizontal auto-scrolling carousel (loops) */}
+          <div
+            ref={booksCarouselRef}
+            className="overflow-x-auto w-full [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            onMouseEnter={() => setBooksPaused(true)}
+            onMouseLeave={() => setBooksPaused(false)}
+            aria-label="Used books carousel"
+          >
+            <div className="flex gap-4 w-max py-1">
+              {[...filteredBooks, ...filteredBooks].map((book, index) => (
+                <Card key={`${book.title}-${index}`} className="hover:shadow-md transition-shadow min-w-[200px] sm:min-w-[220px] lg:min-w-[240px]">
+                  <div className="bg-muted rounded-t-lg h-40 sm:h-44 lg:h-48">
+                    <img
+                      src={`/abstract-geometric-shapes.png?height=220&width=180&query=${book.title} textbook cover`}
+                      alt={book.title}
+                      className="w-full h-full object-cover rounded-t-lg"
+                    />
                   </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <div className="flex items-center space-x-1">
-                      <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                      <span>{book.rating}</span>
+                  <CardContent className="p-3">
+                    <h3 className="font-medium text-xs mb-1 line-clamp-1">{book.title}</h3>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-base font-bold text-primary">{book.price}</span>
+                      <Badge className="text-[10px] px-1.5 py-0" variant={book.condition === "Excellent" ? "default" : "secondary"}>{book.condition}</Badge>
                     </div>
-                    <span className="text-muted-foreground">by {book.seller}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    <div className="flex justify-between items-center text-xs">
+                      <div className="flex items-center space-x-1">
+                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                        <span>{book.rating}</span>
+                      </div>
+                      <span className="text-muted-foreground">by {book.seller}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
       </section>

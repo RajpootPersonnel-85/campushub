@@ -1,46 +1,40 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
 import { ArrowLeft, BookOpen } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import Link from "next/link"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import { useAuth } from "@/components/auth-context"
 
-export default function LoginPage() {
+export default function ForgotPasswordPage() {
   const { sendOtp, verifyOtp } = useAuth()
   const [identifier, setIdentifier] = useState("")
   const [code, setCode] = useState("")
-  const [step, setStep] = useState<"identifier" | "otp">("identifier")
-  const [isLoading, setIsLoading] = useState(false)
+  const [step, setStep] = useState<"identifier" | "otp" | "done">("identifier")
+  const [loading, setLoading] = useState(false)
 
   const onSend = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    setLoading(true)
     await sendOtp(identifier)
-    setIsLoading(false)
+    setLoading(false)
     setStep("otp")
   }
 
   const onVerify = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    setLoading(true)
     const ok = await verifyOtp(code)
-    setIsLoading(false)
-    if (ok) {
-      // In a real app, redirect; here, just go back home
-      window.location.href = "/"
-    }
+    setLoading(false)
+    if (ok) setStep("done")
   }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Header */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center space-x-2 mb-6">
             <ArrowLeft className="w-4 h-4" />
@@ -54,18 +48,17 @@ export default function LoginPage() {
             <span className="text-2xl font-bold text-foreground">CampusHub</span>
           </div>
 
-          <h1 className="text-2xl font-bold text-foreground mb-2">Welcome Back</h1>
-          <p className="text-muted-foreground">Sign in to your account to continue</p>
+          <h1 className="text-2xl font-bold text-foreground mb-2">Forgot password</h1>
+          <p className="text-muted-foreground">We use OTP to verify your account for reset.</p>
         </div>
 
-        {/* Minimal OTP Login */}
         <Card>
           <CardHeader>
-            <CardTitle>Sign In</CardTitle>
-            <CardDescription>Use your email or phone number. We'll send you an OTP.</CardDescription>
+            <CardTitle>Password reset via OTP</CardTitle>
+            <CardDescription>Enter your email/phone to get a code</CardDescription>
           </CardHeader>
           <CardContent>
-            {step === "identifier" ? (
+            {step === "identifier" && (
               <form onSubmit={onSend} className="space-y-4">
                 <div>
                   <Label htmlFor="identifier">Email or phone</Label>
@@ -77,11 +70,12 @@ export default function LoginPage() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Sending OTP..." : "Send OTP"}
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Sending..." : "Send OTP"}
                 </Button>
               </form>
-            ) : (
+            )}
+            {step === "otp" && (
               <form onSubmit={onVerify} className="space-y-4">
                 <div>
                   <Label htmlFor="code">Enter OTP</Label>
@@ -91,12 +85,12 @@ export default function LoginPage() {
                     onChange={(e) => setCode(e.target.value)}
                     placeholder="6-digit code"
                     inputMode="numeric"
-                    pattern="\\d{6}"
+                    pattern="\d{6}"
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Verifying..." : "Verify & Sign In"}
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Verifying..." : "Verify"}
                 </Button>
                 <div className="text-center">
                   <button
@@ -109,24 +103,18 @@ export default function LoginPage() {
                 </div>
               </form>
             )}
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                Don't have an account?{" "}
-                <Link href="/auth/signup" className="text-primary hover:underline font-medium">
-                  Sign up
+            {step === "done" && (
+              <div className="text-center space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Verified. As this is a demo, your account is confirmed. You can now sign in.
+                </p>
+                <Link href="/auth/login">
+                  <Button>Go to Sign In</Button>
                 </Link>
-              </p>
-            </div>
+              </div>
+            )}
           </CardContent>
         </Card>
-
-        {/* Helper links */}
-        <div className="mt-6 text-center text-sm">
-          <Link href="/auth/forgot-password" className="text-primary hover:underline">
-            Forgot password?
-          </Link>
-        </div>
       </div>
     </div>
   )
