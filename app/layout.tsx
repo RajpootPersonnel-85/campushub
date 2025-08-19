@@ -4,6 +4,8 @@ import { GeistSans } from "geist/font/sans"
 import { GeistMono } from "geist/font/mono"
 import "./globals.css"
 import { AuthProvider } from "@/components/auth-context"
+import SiteNavbar from "@/components/site-navbar"
+import SiteFooter from "@/components/site-footer"
 
 export const metadata: Metadata = {
   title: "CampusHub - Your Ultimate Student Platform",
@@ -29,7 +31,9 @@ html {
       </head>
       <body>
         <AuthProvider>
+          <SiteNavbar />
           {children}
+          <SiteFooter />
         </AuthProvider>
       </body>
     </html>

@@ -7,6 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { RESOURCES, RESOURCE_TAGS, ResourceItem } from "@/lib/resources-data"
+import dynamic from "next/dynamic"
+const AdsCarousel = dynamic(() => import("@/components/ads/AdsCarousel"), {
+  ssr: false,
+  loading: () => <div className="w-full max-w-6xl h-[180px] sm:h-[240px] md:h-[300px] rounded-2xl border border-border animate-pulse bg-muted" />,
+})
+const CornerAd = dynamic(() => import("@/components/ads/CornerAd"), { ssr: false })
 import { ExternalLink } from "lucide-react"
 
 export default function ResourcesPage() {
@@ -28,6 +34,14 @@ export default function ResourcesPage() {
             <h1 className="text-2xl font-bold">Best Free Learning Resources</h1>
             <p className="text-sm text-muted-foreground mt-1">Curated list of free books, lectures, and practice platforms.</p>
           </div>
+
+          {/* Ads carousel */}
+          <AdsCarousel
+            slides={[
+              { id: "resources_lb_1", format: "leaderboard", text: "Top MOOCs for free – start today", href: "/resources" },
+              { id: "resources_rect_1", format: "rectangle", text: "Scholarships you may be eligible for", href: "/schemes" },
+            ]}
+          />
 
           <Card>
             <CardHeader>
@@ -71,6 +85,15 @@ export default function ResourcesPage() {
           </div>
         </div>
       </section>
+
+      {/* Corner overlay ad for resources page */}
+      <CornerAd
+        href="/exams"
+        media={{ type: "video", src: "https://www.w3schools.com/html/mov_bbb.mp4", poster: "/algorithms-textbook-pages.png", muted: true, loop: true }}
+        responsive
+        showAfterMs={1800}
+        storageKey="corner_ad_resources"
+      />
     </div>
   )
 }

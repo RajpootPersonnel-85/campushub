@@ -29,15 +29,15 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Link from "next/link"
-import ExamsMegaMenu from "@/components/exams/ExamsMegaMenu"
 import UpcomingExamsHome from "@/components/exams/UpcomingExamsHome"
-import UserMenu from "@/components/user-menu"
-import { useAuth } from "@/components/auth-context"
+import dynamic from "next/dynamic"
+const AdsCarousel = dynamic(() => import("@/components/ads/AdsCarousel"), {
+  ssr: false,
+  loading: () => <div className="w-full max-w-6xl h-[180px] sm:h-[240px] md:h-[300px] rounded-2xl border border-border animate-pulse bg-muted" />,
+})
+const CornerAd = dynamic(() => import("@/components/ads/CornerAd"), { ssr: false })
 
 export default function HomePage() {
-  const { user } = useAuth()
-  const [showSearch, setShowSearch] = useState(false)
-  const [searchText, setSearchText] = useState("")
   // Used Books carousel state
   const booksCarouselRef = useRef<HTMLDivElement | null>(null)
   const [booksPaused, setBooksPaused] = useState(false)
@@ -98,88 +98,6 @@ export default function HomePage() {
   }, [booksPaused])
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation Bar */}
-      <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-bold text-foreground">CampusHub</span>
-            </Link>
-
-            {/* Main Menu */}
-            <div className="hidden md:flex items-center space-x-8">
-              <ExamsMegaMenu />
-              <Link
-                href="/books"
-                className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors"
-              >
-                <BookOpen className="w-4 h-4" />
-                <span>Used Books</span>
-              </Link>
-              <Link
-                href="/hostels"
-                className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors"
-              >
-                <Home className="w-4 h-4" />
-                <span>PG/Hostels</span>
-              </Link>
-              <Link
-                href="/jobs"
-                className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors"
-              >
-                <Briefcase className="w-4 h-4" />
-                <span>Jobs</span>
-              </Link>
-              <Link
-                href="/tiffin"
-                className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors"
-              >
-                <Utensils className="w-4 h-4" />
-                <span>Tiffin Services</span>
-              </Link>
-              <Link
-                href="/wellbeing"
-                className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors"
-              >
-                <HeartHandshake className="w-4 h-4" />
-                <span>Wellbeing</span>
-              </Link>
-              <a
-                href="#deals"
-                className="flex items-center space-x-1 text-muted-foreground hover:text-primary transition-colors"
-              >
-                <Gift className="w-4 h-4" />
-                <span>Student Deals</span>
-              </a>
-            </div>
-
-            {/* Right Side */}
-            <div className="flex items-center space-x-4">
-              {showSearch && (
-                <Input
-                  className="w-40 sm:w-56 md:w-64 transition-all"
-                  placeholder="Search..."
-                  autoFocus
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Escape") setShowSearch(false) }}
-                />
-              )}
-              <Button variant="ghost" size="sm" onClick={() => setShowSearch((v) => !v)} aria-label="Toggle search">
-                <Search className="w-4 h-4" />
-              </Button>
-              {user && (
-                <Button asChild size="sm"><Link href="/subscribe">Subscribe</Link></Button>
-              )}
-              <UserMenu />
-            </div>
-          </div>
-        </div>
-      </nav>
 
       {/* Hero Section */}
       <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-background to-muted">
@@ -220,18 +138,19 @@ export default function HomePage() {
                 Upload Notes → Earn Credits
               </Link>
             </Button>
-            <Button asChild variant="outline" size="lg" className="text-lg px-8 bg-transparent">
-              <Link href="/hostels/list" className="inline-flex items-center">
-                <Home className="w-5 h-5 mr-2" />
-                List Your Hostel Free
-              </Link>
-            </Button>
             <Button asChild variant="secondary" size="lg" className="text-lg px-8">
               <Link href="/schemes" className="inline-flex items-center">
                 🎓
                 <span className="ml-2">Not just career – find schemes & free resources</span>
               </Link>
             </Button>
+            <Button asChild variant="outline" size="lg" className="text-lg px-8 bg-transparent">
+              <Link href="/hostels/list" className="inline-flex items-center">
+                <Home className="w-5 h-5 mr-2" />
+                List Your Hostel Free
+              </Link>
+            </Button>
+         
           </div>
         </div>
 
@@ -245,8 +164,37 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Ad: Hero Ad Carousel (images/videos supported) */}
+      <section className="py-6 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <AdsCarousel
+            showDots
+            slides={[
+              { id: "home_h1", format: "hero", img: "/abstract-geometric-shapes.png", href: "/resources" },
+              { id: "home_h2", format: "hero", img: "/algorithms-textbook.png", href: "/exams" },
+              { id: "home_h3", format: "hero", img: "/calculus-textbook.png", href: "/resources" },
+              { id: "home_h4", format: "hero", img: "/algorithms-textbook-pages.png", href: "/schemes" },
+            ]}
+          />
+        </div>
+      </section>
+
       {/* Upcoming Exams Strip */}
       <UpcomingExamsHome />
+
+      {/* Ad: Hero Ad Carousel below Upcoming Exams */}
+      <section className="py-6 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <AdsCarousel
+            showDots
+            slides={[
+              { id: "home_h5", format: "hero", img: "/abstract-geometric-shapes.png", href: "#deals" },
+              { id: "home_h6", format: "hero", img: "/algorithms-textbook-pages.png", href: "/hostels/list" },
+              { id: "home_h7", format: "hero", img: "/student-avatar.png", href: "/notes/upload" },
+            ]}
+          />
+        </div>
+      </section>
 
       {/* Tiffin Services Section */}
       <section id="tiffin" className="py-16 px-4 sm:px-6 lg:px-8 bg-muted/30">
@@ -256,9 +204,14 @@ export default function HomePage() {
               <h2 className="text-3xl font-bold text-foreground mb-2">🍱 Tiffin Services</h2>
               <p className="text-muted-foreground">Home-cooked meals and affordable plans near your campus</p>
             </div>
-            <Link href="/tiffin">
-              <Button className="bg-primary hover:bg-primary/90">View All Tiffin Services</Button>
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link href="/tiffin">
+                <Button variant="outline">View All</Button>
+              </Link>
+              <Link href="/tiffin/submit">
+                <Button className="bg-primary hover:bg-primary/90">List Your Tiffin</Button>
+              </Link>
+            </div>
           </div>
 
           {/* Quick Filters */}
@@ -798,7 +751,7 @@ export default function HomePage() {
                     />
                   </div>
                   <CardContent className="p-3">
-                    <h3 className="font-medium text-xs mb-1 line-clamp-1">{book.title}</h3>
+                    <h3 className="font-medium text-xs mb-1">{book.title}</h3>
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-base font-bold text-primary">{book.price}</span>
                       <Badge className="text-[10px] px-1.5 py-0" variant={book.condition === "Excellent" ? "default" : "secondary"}>{book.condition}</Badge>
@@ -1009,69 +962,14 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-card border-t border-border py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {/* Logo and Description */}
-            <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                  <BookOpen className="w-5 h-5 text-primary-foreground" />
-                </div>
-                <span className="text-xl font-bold text-foreground">CampusHub</span>
-              </div>
-              <p className="text-muted-foreground mb-4 max-w-md">
-                Your ultimate student platform for notes, books, hostels, and community connections.
-              </p>
-              <div className="flex space-x-4">
-                <Button variant="ghost" size="sm">
-                  Instagram
-                </Button>
-                <Button variant="ghost" size="sm">
-                  WhatsApp
-                </Button>
-                <Button variant="ghost" size="sm">
-                  LinkedIn
-                </Button>
-              </div>
-            </div>
+      
 
-            {/* Quick Links */}
-            <div>
-              <h3 className="font-semibold text-foreground mb-4">Quick Links</h3>
-              <div className="space-y-2">
-                <a href="#" className="block text-muted-foreground hover:text-primary transition-colors">
-                  About
-                </a>
-                <a href="#" className="block text-muted-foreground hover:text-primary transition-colors">
-                  Contact
-                </a>
-                <a href="#" className="block text-muted-foreground hover:text-primary transition-colors">
-                  Careers
-                </a>
-                <a href="#" className="block text-muted-foreground hover:text-primary transition-colors">
-                  Ambassador Program
-                </a>
-              </div>
-            </div>
-
-            {/* Newsletter */}
-            <div>
-              <h3 className="font-semibold text-foreground mb-4">Stay Updated</h3>
-              <p className="text-muted-foreground text-sm mb-4">Get student deals weekly</p>
-              <div className="flex space-x-2">
-                <Input placeholder="Your email" className="flex-1" />
-                <Button size="sm">Subscribe</Button>
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
-            <p>&copy; 2024 CampusHub. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      {/* Corner Overlay Ad (image/video supported) */}
+      <CornerAd
+        href="/deals"
+        media={{ type: "image", src: "/abstract-geometric-shapes.png", alt: "Student Deals" }}
+        responsive
+      />
     </div>
   )
 }

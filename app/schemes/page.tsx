@@ -8,6 +8,12 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { SCHEMES, STATES, CATEGORIES, LEVELS, SchemeItem } from "@/lib/schemes-data"
+import dynamic from "next/dynamic"
+const AdsCarousel = dynamic(() => import("@/components/ads/AdsCarousel"), {
+  ssr: false,
+  loading: () => <div className="w-full max-w-6xl h-[180px] sm:h-[240px] md:h-[300px] rounded-2xl border border-border animate-pulse bg-muted" />,
+})
+const CornerAd = dynamic(() => import("@/components/ads/CornerAd"), { ssr: false })
 import { ExternalLink } from "lucide-react"
 
 export default function SchemesPage() {
@@ -33,6 +39,14 @@ export default function SchemesPage() {
             <h1 className="text-2xl font-bold">Government Schemes & Scholarships You Shouldn’t Miss</h1>
             <p className="text-sm text-muted-foreground mt-1">Filter by state, category, and course level to find relevant schemes. Updated periodically.</p>
           </div>
+
+          {/* Ads carousel */}
+          <AdsCarousel
+            slides={[
+              { id: "schemes_lb_1", format: "leaderboard", text: "Scholarships are live – check eligibility now", href: "/schemes" },
+              { id: "schemes_rect_1", format: "rectangle", text: "Free prep resources inside", href: "/resources" },
+            ]}
+          />
 
           <Card>
             <CardHeader>
@@ -112,6 +126,15 @@ export default function SchemesPage() {
           </Card>
         </div>
       </section>
+
+      {/* Corner overlay ad for schemes page */}
+      <CornerAd
+        href="/schemes"
+        media={{ type: "video", src: "https://www.w3schools.com/html/mov_bbb.mp4", poster: "/calculus-textbook.png", muted: true, loop: true }}
+        responsive
+        showAfterMs={1800}
+        storageKey="corner_ad_schemes"
+      />
     </div>
   )
 }

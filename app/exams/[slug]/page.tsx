@@ -1,9 +1,41 @@
 import React from "react"
+import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { EXAM_DETAILS } from "@/lib/exams-data"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import dynamic from "next/dynamic"
+const AdsCarousel = dynamic(() => import("@/components/ads/AdsCarousel"), {
+  ssr: false,
+  loading: () => <div className="w-full max-w-6xl h-[180px] sm:h-[240px] md:h-[300px] rounded-2xl border border-border animate-pulse bg-muted" />,
+})
+const CornerAd = dynamic(() => import("@/components/ads/CornerAd"), { ssr: false })
+
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const detail = EXAM_DETAILS[params.slug]
+  if (!detail) return { title: "Exam Not Found | CampusHub" }
+  const title = `${detail.name} Exam Details | CampusHub`
+  const description = `Eligibility, fees, syllabus, dates and vacancies for ${detail.name}. Prepare with resources and tips on CampusHub.`
+  const url = `https://campushub.example.com/exams/${params.slug}`
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "article",
+      siteName: "CampusHub",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+  }
+}
 
 export default function ExamDetailPage(props: { params: { slug: string } }) {
   const { slug } = props.params
@@ -27,6 +59,37 @@ export default function ExamDetailPage(props: { params: { slug: string } }) {
               {detail.mode && <Badge variant="secondary">{detail.mode}</Badge>}
               {detail.timing && <Badge variant="secondary">{detail.timing}</Badge>}
             </div>
+            {/* JSON-LD structured data for SEO */}
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{
+                __html: JSON.stringify({
+                  "@context": "https://schema.org",
+                  "@type": "WebPage",
+                  name: `${detail.name} Exam Details`,
+                  description: `Eligibility, fees, syllabus, dates and vacancies for ${detail.name}.`,
+                  url: `https://campushub.example.com/exams/${slug}`,
+                  breadcrumb: {
+                    "@type": "BreadcrumbList",
+                    itemListElement: [
+                      { "@type": "ListItem", position: 1, name: "Home", item: "https://campushub.example.com/" },
+                      { "@type": "ListItem", position: 2, name: "Exams", item: "https://campushub.example.com/exams" },
+                      { "@type": "ListItem", position: 3, name: detail.name, item: `https://campushub.example.com/exams/${slug}` },
+                    ],
+                  },
+                }),
+              }}
+            />
+          </div>
+
+          {/* Ads Carousel */}
+          <div className="py-2">
+            <AdsCarousel
+              slides={[
+                { id: "exam_lb_1", format: "leaderboard", text: "Prepare smarter with free mock tests!", href: "/resources" },
+                { id: "exam_rect_1", format: "rectangle", text: "Scholarships open – apply now", href: "/schemes" },
+              ]}
+            />
           </div>
 
           <Card>
@@ -125,6 +188,15 @@ export default function ExamDetailPage(props: { params: { slug: string } }) {
           )}
         </div>
       </section>
+
+      {/* Corner overlay ad for exams pages */}
+      <CornerAd
+        href="/resources"
+        media={{ type: "video", src: "https://www.w3schools.com/html/mov_bbb.mp4", poster: "/algorithms-textbook.png", muted: true, loop: true }}
+        responsive
+        showAfterMs={1800}
+        storageKey="corner_ad_exams"
+      />
     </div>
   )
 }
