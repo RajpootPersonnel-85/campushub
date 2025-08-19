@@ -185,6 +185,8 @@ export type ExamDetail = {
   eligibleStreams?: ("Non-Medical" | "Medical" | "Commerce" | "Arts")[]
   // If the exam targets graduates with specific disciplines/degree backgrounds
   eligibleDisciplines?: string[]
+  // Optional vacancies list if provided in notification
+  vacancies?: { postName: string; posts: string }[]
 }
 
 export const EXAM_DETAILS: Record<string, ExamDetail> = (() => {
@@ -203,8 +205,19 @@ export const EXAM_DETAILS: Record<string, ExamDetail> = (() => {
       timing: "Multiple shifts",
       syllabus: ["General Intelligence & Reasoning", "General Awareness", "Quantitative Aptitude", "English Comprehension"],
       importantDates: [
-        { label: "Notification", date: "2025-05-01" },
-        { label: "Tier-I Exam", date: "2025-07-20" },
+        { label: "Starting Date Of Submission Of Application Form", date: "06 March 2024" },
+        { label: "Last Date of Submission of Application Form", date: "27 March 2024 (till 11:59 PM)" },
+        { label: "Date Of Preliminary Test", date: "To be Announced" },
+        { label: "Prelim Test Answer Key", date: "To be Announced" },
+        { label: "Prelim Test Result", date: "To be Announced" },
+        { label: "Last date for submission of application form for the Main Exam", date: "To be Announced" },
+        { label: "Date Of Main Examination", date: "To be Announced" },
+      ],
+      vacancies: [
+        { postName: "Election Kanungo", posts: "UR 09 UR(WFF) -01 SC of HP - Total = 15 Posts" },
+        { postName: "Extension Officer", posts: "UR -06 SC of HP - 01 EWS of HP -02 Total -09 Posts" },
+        { postName: "Excise & Taxation Inspector (regular basis)", posts: "12, EWS*04, ST*01, ST, SC, SC (WFP) - 01, SC (BPL) -02, OBC 05, OBC (BPL) 02, OBC (WFF) 01 Total -35" },
+        { postName: "Inspector (Audit) (Contract Basis)", posts: "UR -01, (BPL) -01, Total 05" },
       ],
     }),
     make("CUET PG", {

@@ -1,0 +1,78 @@
+CampusHub Website Overview
+Generated: 2025-08-19 11:35 (IST)
+
+1) Project Summary
+- CampusHub is a student-centric platform aggregating exams, notes, hostels/PGs, tiffin services, used books, and deals.
+- It uses Next.js App Router with a shared UI system and slug-based routing for detail pages.
+
+2) Homepage (components/home-page.tsx)
+- Navbar: Quick links to Notes, Books, Hostels, Jobs, Tiffin Services, Student Deals.
+- Hero section: Value proposition, search-friendly layout, and two key CTAs:
+  • Upload Notes → Earn Credits (links to /notes/upload)
+  • List Your Hostel Free (links to /hostels/list)
+- Upcoming Exams strip: A compact, horizontally scrollable carousel rendered via components/exams/UpcomingExamsHome.tsx; each card shows name, days left, and links to detailed pages.
+- Additional verticals highlighted (as sections/cards): Used Books, Tiffin Services, and other student utilities for discovery.
+- Consistent responsive design with attention to avoiding UI overflow.
+
+3) Exams Feature
+- Centralized data: lib/exams-data.ts
+  • slugify utility for stable exam URLs.
+  • EXAM_DETAILS with eligibility, fees, syllabus, important dates, and new fields:
+    - eligibleStreams? (Non-Medical, Medical, Commerce, Arts) for 12th pass filtering.
+    - eligibleDisciplines? (e.g., Any discipline, Engineering, CS/IT, Physics, etc.) for graduate/PG filtering.
+- Exams Mega Menu (components/exams/ExamsMegaMenu.tsx)
+  • “Due soon” row pinned at top showing exams within 30 days.
+  • Items link to detailed exam pages via slugs.
+- Upcoming Exams (components/exams/UpcomingExams.tsx)
+  • Calendar export: Google Calendar deep link + downloadable .ics file per exam.
+  • “Remind me” button: Stores reminders in localStorage; toast feedback on set/remove.
+  • Responsive action buttons to prevent overflow.
+- Exam Detail Page (app/exams/[slug]/page.tsx)
+  • Server component rendering EXAM_DETAILS by slug.
+  • Shows eligibility, fees, syllabus, and important dates; 404 for invalid slugs.
+- Exams Listing and Filters (app/exams/page.tsx)
+  • Category tabs (e.g., SSC Exams, Banking Exams, etc.).
+  • Filters: Age input, Qualification select, dependent selects based on qualification:
+    - If 12th selected → Stream select (Non-Medical, Medical, Commerce, Arts).
+    - If Graduate or Postgraduate selected → Discipline select (Engineering, CS/IT, Science, Arts, Physics, Chemistry, Mathematics, Biotechnology, Geology, Economics, Mechanical, Electrical, Automobile, Production, Electronics, Any discipline).
+  • “All” option for each dependent select; when “All” is chosen, no narrowing occurs for that dimension.
+  • Normalized qualification matching and selective filtering logic applied only when needed.
+
+4) Hostels
+- Listing/Onboarding Page (app/hostels/list/page.tsx)
+  • Full form for owners: property info, address, city, gender preference, description, up to 8 photos with preview/remove, amenities checkboxes, room types and pricing (add/remove rows), owner contact, terms checkbox.
+  • Submit currently logs payload; ready for backend wiring.
+- Hostels Home (app/hostels/page.tsx) and detail routes (app/hostels/[id]/page.tsx) exist for browsing and details.
+- Homepage CTA “List Your Hostel Free” now correctly links to /hostels/list.
+
+5) Notes & Books
+- Notes: Quick access from navbar and hero CTA to upload notes and earn credits.
+- Used Books: Browse, manage, and a dedicated manage page at app/books/manage/page.tsx.
+- Shared forms and components found under components/books/ (e.g., BookForm.tsx).
+
+6) Tiffin Services
+- Discovery landing at /tiffin and a vendor onboarding flow at /tiffin/onboard/page.tsx.
+- Checkout success page exists (/tiffin/[id]/checkout/success) to confirm orders.
+
+7) Auth & Dashboard
+- Auth dialog component (components/auth-dialog.tsx) for login/signup UX hooks.
+- Dashboard shell at /dashboard for future user and vendor management.
+
+8) UX & Technical Highlights
+- Next.js App Router with server and client components mix for performance and SEO.
+- UI system: shadcn + lucide-react icons; consistent Card, Button, Badge, Select, Input usage.
+- LocalStorage used for non-sensitive reminders only; external links set with noopener+noreferrer.
+- Slug-based navigation ensures clean URLs and easy deep linking from homepage and mega menus.
+
+9) What’s Working End-to-End
+- Homepage CTAs and Upcoming Exams strip navigation to detail pages.
+- Exams filters with dependent dropdowns (12th streams, Graduate/PG disciplines) and category browsing.
+- Calendar export (.ics + Google) and Remind Me toggling for Upcoming Exams.
+- Hostel listing form UX including dynamic room types and photo management.
+- Tiffin onboarding and checkout success routes load and render as expected.
+
+10) Suggested Next Steps
+- Wire backend for hostel listing submission and exam reminders persistence.
+- Expand EXAM_DETAILS coverage and disciplines per exam for richer filtering.
+- Add a “My Reminders” page to manage saved reminders.
+- Improve search across notes/books/hostels for unified discovery.

@@ -20,6 +20,7 @@ import {
   CheckCircle,
   Calendar,
   Building,
+  HeartHandshake,
 } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -140,6 +141,13 @@ export default function HomePage() {
                 <Utensils className="w-4 h-4" />
                 <span>Tiffin Services</span>
               </Link>
+              <Link
+                href="/wellbeing"
+                className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors"
+              >
+                <HeartHandshake className="w-4 h-4" />
+                <span>Wellbeing</span>
+              </Link>
               <a
                 href="#deals"
                 className="flex items-center space-x-1 text-muted-foreground hover:text-primary transition-colors"
@@ -216,6 +224,12 @@ export default function HomePage() {
               <Link href="/hostels/list" className="inline-flex items-center">
                 <Home className="w-5 h-5 mr-2" />
                 List Your Hostel Free
+              </Link>
+            </Button>
+            <Button asChild variant="secondary" size="lg" className="text-lg px-8">
+              <Link href="/schemes" className="inline-flex items-center">
+                🎓
+                <span className="ml-2">Not just career – find schemes & free resources</span>
               </Link>
             </Button>
           </div>

@@ -2,12 +2,20 @@ import React from "react"
 import { notFound } from "next/navigation"
 import { EXAM_DETAILS } from "@/lib/exams-data"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 
 export default function ExamDetailPage(props: { params: { slug: string } }) {
   const { slug } = props.params
   const detail = EXAM_DETAILS[slug]
   if (!detail) return notFound()
+
+  const isoDate = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s)
+  const fmt = (s: string) => (isoDate(s) ? new Date(s).toLocaleDateString() : s)
+  const headerYear = (() => {
+    const d = detail.importantDates?.find((x) => isoDate(x.date))?.date
+    return d ? new Date(d).getFullYear() : new Date().getFullYear()
+  })()
 
   return (
     <div className="min-h-screen bg-background">
@@ -63,15 +71,55 @@ export default function ExamDetailPage(props: { params: { slug: string } }) {
           {detail.importantDates && detail.importantDates.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Important Dates</CardTitle>
+                <CardTitle>{detail.name} Exam Dates {headerYear}</CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {detail.importantDates.map((d) => (
-                  <div key={d.label} className="border rounded-lg p-3">
-                    <div className="text-sm text-muted-foreground">{d.label}</div>
-                    <div className="font-medium">{new Date(d.date).toLocaleDateString()}</div>
-                  </div>
-                ))}
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-1/2">Events</TableHead>
+                        <TableHead className="w-1/2">Dates</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {detail.importantDates.map((d) => (
+                        <TableRow key={d.label}>
+                          <TableCell className="font-medium">{d.label}</TableCell>
+                          <TableCell>{fmt(d.date)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {detail.vacancies && detail.vacancies.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Vacancies</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-1/3">Post Name</TableHead>
+                        <TableHead className="w-2/3">No. of Posts</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {detail.vacancies.map((v) => (
+                        <TableRow key={v.postName}>
+                          <TableCell className="font-medium">{v.postName}</TableCell>
+                          <TableCell className="whitespace-pre-wrap">{v.posts}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           )}
