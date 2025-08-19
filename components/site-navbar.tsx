@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 import UserMenu from "@/components/user-menu"
 import { useAuth } from "@/components/auth-context"
@@ -36,6 +36,17 @@ export default function SiteNavbar() {
   const { user } = useAuth()
   const [showSearch, setShowSearch] = useState(false)
   const [q, setQ] = useState("")
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
+  // Avoid SSR/CSR mismatch by rendering navbar only on client
+  if (!mounted) {
+    return (
+      <header className="sticky top-0 z-40 w-full border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-14" />
+      </header>
+    )
+  }
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -54,14 +65,18 @@ export default function SiteNavbar() {
             <NavigationMenuList>
               {/* Exams (Top-level with mega menu) */}
               <NavigationMenuItem key="exams">
-                <NavigationMenuTrigger>Exams</NavigationMenuTrigger>
+                <NavigationMenuTrigger suppressHydrationWarning>
+                  Exams
+                </NavigationMenuTrigger>
                 <NavigationMenuContent>
                   <ExamsMegaMenu mode="content" />
                 </NavigationMenuContent>
               </NavigationMenuItem>
               {/* Academics */}
               <NavigationMenuItem key="academics">
-                <NavigationMenuTrigger>Academics</NavigationMenuTrigger>
+                <NavigationMenuTrigger suppressHydrationWarning>
+                  Academics
+                </NavigationMenuTrigger>
                 <NavigationMenuContent>
                   <div className="grid gap-1 p-2 w-56">
                     <NavigationMenuLink asChild>
@@ -82,7 +97,9 @@ export default function SiteNavbar() {
 
               {/* Student Life */}
               <NavigationMenuItem key="student-life">
-                <NavigationMenuTrigger>Student Life</NavigationMenuTrigger>
+                <NavigationMenuTrigger suppressHydrationWarning>
+                  Student Life
+                </NavigationMenuTrigger>
                 <NavigationMenuContent>
                   <div className="grid gap-1 p-2 w-56">
                     <NavigationMenuLink asChild>
@@ -111,7 +128,9 @@ export default function SiteNavbar() {
 
               {/* Opportunities */}
               <NavigationMenuItem key="opportunities">
-                <NavigationMenuTrigger>Opportunities</NavigationMenuTrigger>
+                <NavigationMenuTrigger suppressHydrationWarning>
+                  Opportunities
+                </NavigationMenuTrigger>
                 <NavigationMenuContent>
                   <div className="grid gap-1 p-2 w-56">
                     <NavigationMenuLink asChild>

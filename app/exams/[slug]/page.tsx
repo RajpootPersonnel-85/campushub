@@ -5,12 +5,8 @@ import { EXAM_DETAILS } from "@/lib/exams-data"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import dynamic from "next/dynamic"
-const AdsCarousel = dynamic(() => import("@/components/ads/AdsCarousel"), {
-  ssr: false,
-  loading: () => <div className="w-full max-w-6xl h-[180px] sm:h-[240px] md:h-[300px] rounded-2xl border border-border animate-pulse bg-muted" />,
-})
-const CornerAd = dynamic(() => import("@/components/ads/CornerAd"), { ssr: false })
+import AdsCarousel from "@/components/ads/AdsCarousel"
+import CornerAd from "@/components/ads/CornerAd"
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const detail = EXAM_DETAILS[params.slug]
