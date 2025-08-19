@@ -41,6 +41,7 @@ export default function SiteFooter() {
               <Link href="/contact" className="block text-muted-foreground hover:text-foreground">Contact</Link>
               <Link href="/careers" className="block text-muted-foreground hover:text-foreground">Careers</Link>
               <Link href="/ambassador" className="block text-muted-foreground hover:text-foreground">Ambassador Program</Link>
+              <Link href="/support" className="block text-muted-foreground hover:text-foreground">Leads / Talk to Us</Link>
             </div>
           </div>
 
@@ -60,6 +61,7 @@ export default function SiteFooter() {
           <div className="mt-3 flex items-center justify-center gap-4">
             <Link href="/privacy" className="hover:text-foreground">Privacy</Link>
             <Link href="/terms" className="hover:text-foreground">Terms</Link>
+            <Link href="/support" className="hover:text-foreground">Support</Link>
           </div>
         </div>
       </div>
