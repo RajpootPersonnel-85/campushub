@@ -139,6 +139,11 @@ export default function SiteNavbar() {
                       </Link>
                     </NavigationMenuLink>
                     <NavigationMenuLink asChild>
+                      <Link href="/careers/compare" className="rounded-sm px-2 py-2 hover:bg-accent flex flex-row items-center gap-2 text-foreground">
+                        <ClipboardList className="w-4 h-4" /> Career Comparison
+                      </Link>
+                    </NavigationMenuLink>
+                    <NavigationMenuLink asChild>
                       <Link href="/deals" className="rounded-sm px-2 py-2 hover:bg-accent flex flex-row items-center gap-2 text-foreground">
                         <Gift className="w-4 h-4" /> Student Deals
                       </Link>

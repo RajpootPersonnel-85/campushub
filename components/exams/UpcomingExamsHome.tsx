@@ -3,6 +3,8 @@
 import Link from "next/link"
 import { UPCOMING_EXAMS } from "@/lib/exams-data"
 import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
+import { CalendarDays, ChevronRight, Clock3, Tag } from "lucide-react"
 // no client-only gating; keep render identical on server and client
 
 function daysLeft(dateStr: string) {
@@ -33,21 +35,56 @@ export default function UpcomingExamsHome() {
           <h2 className="text-2xl font-bold">📅 Upcoming Exams</h2>
           <Link href="/exams" className="text-sm text-primary hover:underline">View all</Link>
         </div>
-        <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex gap-3 min-w-full">
+        <div className="overflow-x-auto md:overflow-visible [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 min-w-full">
             {items.map((e) => {
               const d = daysLeft(e.date)
-              const color = d <= 14 ? "bg-red-500" : d <= 45 ? "bg-amber-500" : "bg-emerald-500"
+              const isOver = d < 0
+              const badgeColor = isOver ? "bg-zinc-500" : d <= 14 ? "bg-red-500" : d <= 45 ? "bg-amber-500" : "bg-emerald-600"
+              const dateClass = isOver ? "line-through text-muted-foreground/70" : "text-muted-foreground"
+              const statusLabel = isOver ? "Over" : `${d} days left`
               return (
-                <Link key={`${e.name}-${e.date}`} href={e.link || "/exams"} className="min-w-[260px] border rounded-lg p-3 hover:bg-muted/60 transition">
-                  <div className="flex items-center justify-between">
-                    <div className="min-w-0">
-                      <div className="font-medium truncate">{e.name}</div>
-                      <div className="text-xs text-muted-foreground truncate">{formatIsoDate(e.date)}</div>
-                    </div>
-                    <Badge className={`${color} text-white`}>{d >= 0 ? `${d}d` : "over"}</Badge>
-                  </div>
-                </Link>
+                <Card
+                  key={`${e.name}-${e.date}`}
+                  className="group relative min-w-[260px] md:min-w-0 overflow-hidden rounded-xl border bg-card/80 backdrop-blur-sm shadow-sm transition hover:shadow-md hover:border-primary/30 focus-within:ring-2 focus-within:ring-primary/30"
+                >
+                  <Link href={e.link || "/exams"} className="block">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="size-9 shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                            <CalendarDays className="size-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-medium truncate group-hover:text-primary transition-colors">{e.name}</div>
+                            <div className={`text-xs truncate ${dateClass}`}>{formatIsoDate(e.date)}</div>
+                          </div>
+                        </div>
+                        <Badge className={`${badgeColor} text-white shrink-0 rounded-full px-2.5 py-1 text-[11px] leading-none flex items-center gap-1`}>
+                          <Clock3 className="size-3.5 opacity-90" />
+                          {statusLabel}
+                        </Badge>
+                      </div>
+                      <div className="mt-3 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {e.category ? (
+                            <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground bg-muted/40">
+                              <Tag className="size-3 opacity-70" />
+                              <span className="truncate">{e.category}</span>
+                            </span>
+                          ) : <span />}
+                          {e.applyBy ? (
+                            <span className="text-[11px] text-muted-foreground truncate">Apply by {formatIsoDate(e.applyBy)}</span>
+                          ) : null}
+                        </div>
+                        <div className="flex items-center text-xs text-muted-foreground">
+                          <span className="mr-1">Details</span>
+                          <ChevronRight className="size-3.5 opacity-70 group-hover:opacity-100 transition" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Link>
+                </Card>
               )
             })}
           </div>

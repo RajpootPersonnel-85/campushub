@@ -32,7 +32,19 @@ export default function AdsCarousel({
   showDots?: boolean
   pauseOnHover?: boolean
 }) {
-  const [idx, setIdx] = useState(0)
+  // Build extended slides for seamless loop
+  const extendedSlides = useMemo(() => {
+    if (slides.length > 1) {
+      const first = slides[0]
+      const last = slides[slides.length - 1]
+      return [last, ...slides, first]
+    }
+    return slides
+  }, [slides])
+
+  // Current index within extendedSlides (start at 1 to show first real slide)
+  const [idx, setIdx] = useState(() => (slides.length > 1 ? 1 : 0))
+  const [withTransition, setWithTransition] = useState(true)
   const [hover, setHover] = useState(false)
   const [paused, setPaused] = useState(false)
   const timer = useRef<number | null>(null)
@@ -41,8 +53,8 @@ export default function AdsCarousel({
   const touchDeltaX = useRef<number>(0)
 
   const dims = useMemo(() => {
-    // Use current slide format to size the viewport
-    const s = slides[idx]
+    // Use current extended slide format to size the viewport
+    const s = (extendedSlides[idx]) ?? slides[0]
     switch (s.format) {
       case "leaderboard":
         return "h-[90px] w-full max-w-[970px]"
@@ -52,8 +64,9 @@ export default function AdsCarousel({
       default:
         return "w-full max-w-6xl h-[180px] sm:h-[240px] md:h-[300px]"
     }
-  }, [slides, idx])
+  }, [extendedSlides, slides, idx])
 
+  // Respect reduced motion preference
   useEffect(() => {
     // Respect reduced motion preference: start paused
     try {
@@ -63,14 +76,16 @@ export default function AdsCarousel({
     } catch {}
   }, [])
 
+  // Auto-play advancing
   useEffect(() => {
+    if (slides.length <= 1) return
     if ((hover && pauseOnHover) || paused) {
       if (timer.current) window.clearInterval(timer.current)
       return
     }
     timer.current && window.clearInterval(timer.current)
     timer.current = window.setInterval(() => {
-      setIdx((i) => (i + 1) % slides.length)
+      setIdx((i) => i + 1)
     }, intervalMs) as any
     return () => {
       if (timer.current) window.clearInterval(timer.current)
@@ -78,7 +93,9 @@ export default function AdsCarousel({
   }, [slides.length, intervalMs, hover, pauseOnHover, paused])
 
   // Ensure only the active video's playback is running
+  const hasVideo = useMemo(() => extendedSlides.some((s) => !!s.video), [extendedSlides])
   useEffect(() => {
+    if (!hasVideo) return
     videoRefs.current.forEach((v, i) => {
       if (!v) return
       if (i === idx && !paused) {
@@ -87,10 +104,10 @@ export default function AdsCarousel({
         try { v.pause() } catch {}
       }
     })
-  }, [idx, paused])
+  }, [idx, paused, hasVideo])
 
-  const goPrev = () => setIdx((i) => (i - 1 + slides.length) % slides.length)
-  const goNext = () => setIdx((i) => (i + 1) % slides.length)
+  const goPrev = () => { if (slides.length > 1) setIdx((i) => i - 1) }
+  const goNext = () => { if (slides.length > 1) setIdx((i) => i + 1) }
 
   const onTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX
@@ -122,6 +139,39 @@ export default function AdsCarousel({
     }
   }
 
+  // Snap without transition when we hit the cloned edges
+  useEffect(() => {
+    if (slides.length <= 1) return
+    if (!withTransition) return
+    const lastIndex = extendedSlides.length - 1 // last is cloned first
+    if (idx === 0) {
+      // moved to cloned last; snap to real last
+      setTimeout(() => {
+        setWithTransition(false)
+        setIdx(extendedSlides.length - 2)
+        // re-enable transition on next frame
+        requestAnimationFrame(() => setWithTransition(true))
+      }, 0)
+    } else if (idx === lastIndex) {
+      // moved to cloned first; snap to real first (index 1)
+      setTimeout(() => {
+        setWithTransition(false)
+        setIdx(1)
+        requestAnimationFrame(() => setWithTransition(true))
+      }, 0)
+    }
+  }, [idx, extendedSlides.length, slides.length, withTransition])
+
+  // Reset index when slides change
+  useEffect(() => {
+    setWithTransition(false)
+    setIdx(slides.length > 1 ? 1 : 0)
+    requestAnimationFrame(() => setWithTransition(true))
+  }, [slides.length])
+
+  // Map extended index to real dot index
+  const realIdx = slides.length > 1 ? ((idx - 1 + slides.length) % slides.length) : 0
+
   return (
     <div className={cn("w-full flex flex-col items-center", className)}>
       <div
@@ -138,13 +188,17 @@ export default function AdsCarousel({
       >
         {/* Track */}
         <div
-          className="absolute inset-0 flex transition-transform duration-500 ease-out"
-          style={{ transform: `translateX(-${idx * 100}%)`, width: `${slides.length * 100}%` }}
+          className={cn("absolute inset-0 flex", withTransition ? "transition-transform duration-500 ease-out" : "")}
+          style={{ transform: `translateX(-${idx * 100}%)`, width: `${extendedSlides.length * 100}%`, willChange: "transform" }}
         >
-          {slides.map((s, i) => (
-            <div key={s.id} className="w-full shrink-0 h-full">
+          {extendedSlides.map((s, i) => {
+            const isCloneStart = i === 0 && slides.length > 1 // cloned last at start
+            const isCloneEnd = i === extendedSlides.length - 1 && slides.length > 1 // cloned first at end
+            const key = isCloneStart ? `${s.id}__clone-start` : isCloneEnd ? `${s.id}__clone-end` : s.id
+            return (
+            <div key={key} className="w-full shrink-0 h-full">
               {s.href ? (
-                <Link href={s.href} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
+                <Link href={s.href} aria-label={s.text || "carousel slide"} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
                   {s.video ? (
                     <video
                       ref={(el) => {
@@ -159,7 +213,17 @@ export default function AdsCarousel({
                       className="w-full h-full object-cover"
                     />
                   ) : s.img ? (
-                    <Image src={s.img} alt="ad" fill sizes="100vw" className="object-cover" priority={i === 0} />
+                    <Image
+                      src={s.img}
+                      alt={s.text || "slide"}
+                      fill
+                      sizes="100vw"
+                      className="object-cover"
+                      priority={slides.length > 1 ? i === 1 : i === 0}
+                      fetchPriority={(slides.length > 1 ? i === 1 : i === 0) ? "high" : undefined}
+                      loading={(slides.length > 1 ? i === 1 : i === 0) ? undefined : "lazy"}
+                      decoding="async"
+                    />
                   ) : (
                     <div
                       className={cn(
@@ -186,7 +250,15 @@ export default function AdsCarousel({
                   className="w-full h-full object-cover"
                 />
               ) : s.img ? (
-                <Image src={s.img} alt={s.text || "ad"} fill sizes="100vw" className="object-cover" />
+                <Image
+                  src={s.img}
+                  alt={s.text || "ad"}
+                  fill
+                  sizes="100vw"
+                  className="object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
               ) : (
                 <div
                   className={cn(
@@ -199,7 +271,8 @@ export default function AdsCarousel({
                 </div>
               )}
             </div>
-          ))}
+            )
+          })}
         </div>
 
         {/* Prev / Next arrows */}
@@ -228,16 +301,16 @@ export default function AdsCarousel({
         </button>
       </div>
 
-      {showDots && (
+      {showDots && slides.length > 0 && (
         <div className="mt-2 flex items-center justify-center gap-2">
           {slides.map((_, i) => (
             <button
               key={i}
               aria-label={`Go to ad ${i + 1}`}
-              onClick={() => setIdx(i)}
+              onClick={() => setIdx(slides.length > 1 ? i + 1 : 0)}
               className={cn(
                 "h-2 w-2 rounded-full transition-colors",
-                i === idx ? "bg-foreground" : "bg-muted-foreground/30 hover:bg-muted-foreground/60"
+                i === realIdx ? "bg-foreground" : "bg-muted-foreground/30 hover:bg-muted-foreground/60"
               )}
             />
           ))}

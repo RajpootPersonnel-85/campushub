@@ -39,7 +39,7 @@ export default function SiteFooter() {
             <div className="space-y-2 text-sm">
               <Link href="/about" className="block text-muted-foreground hover:text-foreground">About</Link>
               <Link href="/contact" className="block text-muted-foreground hover:text-foreground">Contact</Link>
-              <Link href="/careers" className="block text-muted-foreground hover:text-foreground">Careers</Link>
+              <Link href="/careers/compare" className="block text-muted-foreground hover:text-foreground">Careers</Link>
               <Link href="/ambassador" className="block text-muted-foreground hover:text-foreground">Ambassador Program</Link>
               <Link href="/support" className="block text-muted-foreground hover:text-foreground">Leads / Talk to Us</Link>
             </div>

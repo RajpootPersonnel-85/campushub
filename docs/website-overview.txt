@@ -1,6 +1,35 @@
 CampusHub Website Overview
 Generated: 2025-08-19 11:35 (IST)
 
+Install dependencies (recommended package manager: pnpm, since 
+pnpm-lock.yaml
+ exists):
+pnpm: pnpm install
+npm: npm install
+yarn: yarn
+Start the dev server:
+pnpm: pnpm dev
+npm: npm run dev
+yarn: yarn dev
+Build for production: pnpm build
+Start production server (after build): pnpm start
+Open http://localhost:3000 after the dev server starts.
+
+If you want, I can run pnpm install and then pnpm dev for you in d:\Pro
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 1) Project Summary
 - CampusHub is a student-centric platform aggregating exams, notes, hostels/PGs, tiffin services, used books, and deals.
 - It uses Next.js App Router with a shared UI system and slug-based routing for detail pages.
