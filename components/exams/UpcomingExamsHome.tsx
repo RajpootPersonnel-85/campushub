@@ -4,6 +4,7 @@ import Link from "next/link"
 import { UPCOMING_EXAMS } from "@/lib/exams-data"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { CalendarDays, ChevronRight, Clock3, Tag } from "lucide-react"
 // no client-only gating; keep render identical on server and client
 
@@ -27,22 +28,30 @@ function formatIsoDate(dateStr: string) {
 }
 
 export default function UpcomingExamsHome() {
-  const items = UPCOMING_EXAMS.slice().sort((a, b) => +new Date(a.date) - +new Date(b.date)).slice(0, 9)
+  const items = UPCOMING_EXAMS
+    .filter((e) => daysLeft(e.date) >= 0)
+    .sort((a, b) => +new Date(a.date) - +new Date(b.date))
+    .slice(0, 9)
   return (
-    <section suppressHydrationWarning className="py-12 px-4 sm:px-6 lg:px-8">
+    <section suppressHydrationWarning className="py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold">📅 Upcoming Exams</h2>
-          <Link href="/exams" className="text-sm text-primary hover:underline">View all</Link>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <div className="text-xs tracking-wider text-muted-foreground uppercase">Exams</div>
+            <h2 className="text-2xl font-bold flex items-center gap-2"><CalendarDays className="h-5 w-5 text-primary" /> Upcoming Exams</h2>
+          </div>
+          <Button asChild size="sm" variant="ghost" className="gap-1">
+            <Link href="/exams">View all <ChevronRight className="h-4 w-4" /></Link>
+          </Button>
         </div>
         <div className="overflow-x-auto md:overflow-visible [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 min-w-full">
+          <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-4 min-w-full">
             {items.map((e) => {
               const d = daysLeft(e.date)
               const isOver = d < 0
-              const badgeColor = isOver ? "bg-zinc-500" : d <= 14 ? "bg-red-500" : d <= 45 ? "bg-amber-500" : "bg-emerald-600"
+              const badgeColor = isOver ? "bg-zinc-500" : d <= 14 ? "bg-red-600" : d <= 45 ? "bg-amber-500" : "bg-emerald-600"
               const dateClass = isOver ? "line-through text-muted-foreground/70" : "text-muted-foreground"
-              const statusLabel = isOver ? "Over" : `${d} days left`
+              const statusLabel = isOver ? "Over" : d === 0 ? "Today" : `${d} days left`
               return (
                 <Card
                   key={`${e.name}-${e.date}`}
@@ -51,13 +60,11 @@ export default function UpcomingExamsHome() {
                   <Link href={e.link || "/exams"} className="block">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="size-9 shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                            <CalendarDays className="size-4" />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="font-medium truncate group-hover:text-primary transition-colors">{e.name}</div>
-                            <div className={`text-xs truncate ${dateClass}`}>{formatIsoDate(e.date)}</div>
+                        <div className="min-w-0">
+                          <div className="font-medium truncate group-hover:text-primary transition-colors">{e.name}</div>
+                          <div className="mt-1 inline-flex items-center gap-1 rounded-md bg-muted/60 px-2 py-0.5 text-[11px] text-muted-foreground">
+                            <CalendarDays className="size-3" />
+                            <span className={dateClass}>{formatIsoDate(e.date)}</span>
                           </div>
                         </div>
                         <Badge className={`${badgeColor} text-white shrink-0 rounded-full px-2.5 py-1 text-[11px] leading-none flex items-center gap-1`}>

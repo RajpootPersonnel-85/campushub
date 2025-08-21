@@ -1,0 +1,142 @@
+CampusHub – API Requirements per Page
+
+Note: All endpoints are suggestions to make the current static UI dynamic. Names are RESTful and can be adapted to your backend stack. Use pagination for list endpoints. Authenticated endpoints are marked (Auth).
+
+Global
+- /api/auth/session (GET) -> { user: { id, name, email, avatarUrl, role }, expires }
+- /api/search (GET) -> query, filters -> { results: Array<{ type, id, title, snippet, url }> }
+- Common error format: { ok: false, message, code? }
+
+Home – app/page.tsx (HomePage)
+- /api/home/overview (GET) -> { highlights: Array<{ type, title, url, image }>, counts: { books, jobs, notes, hostels, communityPosts } }
+- /api/books (GET) -> see Books list
+- /api/jobs (GET) -> see Jobs list
+- /api/notes (GET) -> see Notes list
+- /api/hostels (GET) -> see Hostels list
+- /api/deals (GET) -> see Deals list
+
+Auth – app/auth/login, signup, forgot-password
+- /api/auth/login (POST) -> { email, password } -> { ok, token?, user }
+- /api/auth/signup (POST) -> { name, email, password } -> { ok, user, verifyRequired }
+- /api/auth/forgot-password (POST) -> { email } -> { ok }
+- /api/auth/reset-password (POST) -> { token, password } -> { ok }
+- /api/auth/logout (POST) (Auth) -> { ok }
+
+Books – app/books
+List – app/books/page.tsx
+- /api/books (GET) -> query: { q?, subject?, condition?, priceMin?, priceMax?, sort?, page, pageSize }
+  Response: { items: Array<BookSummary>, total, page, pageSize }
+  BookSummary: { id, title, author, price, originalPrice?, condition, subject, seller: { id, name, rating, totalSales, location }, thumbnail }
+Detail – app/books/[id]/page.tsx
+- /api/books/:id (GET) -> BookDetail
+  BookDetail: { id, title, author, price, originalPrice?, condition, subject, images[], description, postedDate, isbn?, edition?, language?, publisher?, pages?, weight?, tags[], specifications: Record<string,string>, seller: { id, name, avatar, rating, totalSales, location, joinedDate, responseTime, verified } }
+- /api/books/:id/reviews (GET) -> { items: Array<{ id, buyer: { id, name }, rating, comment, date, verified }>, total }
+- /api/books/:id/favorite (POST) (Auth) -> { action: "add"|"remove" } -> { ok, favorited }
+Create/Sell – app/books/sell & app/books/new/page.tsx
+- /api/books (POST) (Auth, multipart optional) -> { title, author, price, condition, subject, description, images[], isbn?, edition?, language?, tags[] } -> { ok, id }
+Manage – app/books/manage/page.tsx
+- /api/users/me/books (GET) (Auth) -> { items: Array<BookSummary> }
+- /api/books/:id (PATCH) (Auth) -> updatable fields -> { ok }
+- /api/books/:id (DELETE) (Auth) -> { ok }
+Edit – app/books/[id]/edit/page.tsx
+- Uses GET /api/books/:id and PATCH /api/books/:id
+
+Careers Compare – app/careers/compare/page.tsx
+- /api/careers/roles (GET) -> { items: Array<{ id, title, category, medianSalary, growth, skills[] }> }
+- /api/careers/compare (POST) -> { roleIds: string[] } -> { comparison: Array<{ id, title, salary, growth, skillsOverlap[], pros[], cons[] }> }
+
+Community – app/community and /community/create
+List – /community/page.tsx
+- /api/community/posts (GET) -> { page, pageSize, q? } -> { items: Array<{ id, title, excerpt, author: { id, name, avatar }, tags[], createdAt, upvotes }>, total }
+Create – /community/create/page.tsx
+- /api/community/posts (POST) (Auth) -> { title, content, tags[] } -> { ok, id }
+- /api/community/posts/:id (PATCH|DELETE) (Auth)
+
+Dashboard – app/dashboard/page.tsx (Auth)
+- /api/dashboard/overview (GET) -> { user, stats: { booksListed, booksSold, notesUploaded, jobsApplied, messages }, recent: { books[], messages[], notifications[] } }
+
+Deals – app/deals/page.tsx
+- /api/deals (GET) -> { items: Array<{ id, title, image, price, discountPercent, validTill, url }> }
+
+Exams – app/exams and /exams/[slug]
+List – /exams/page.tsx
+- /api/exams (GET) -> { items: Array<{ slug, name, date, level, category, registrationOpen, brochureUrl? }>, filters: { levels[], categories[] } }
+Detail – /exams/[slug]/page.tsx
+- /api/exams/:slug (GET) -> { slug, name, schedule, syllabus[], eligibility, applicationLinks[], faqs[] }
+
+Hostels – app/hostels, /hostels/list, /hostels/[id]
+List – /hostels/page.tsx and /hostels/list/page.tsx
+- /api/hostels (GET) -> { city?, priceMin?, priceMax?, page, pageSize } -> { items: Array<{ id, name, location, priceFrom, amenities[], rating, thumbnail }>, total }
+Detail – /hostels/[id]/page.tsx
+- /api/hostels/:id (GET) -> { id, name, images[], location, description, amenities[], rooms: Array<{ type, price, availability }>, rules[], contact: { phone, email }, rating }
+
+Jobs – app/jobs/page.tsx
+- /api/jobs (GET) -> { q?, type?, location?, page, pageSize } -> { items: Array<{ id, title, company, location, type, stipend?, salary?, postedAt, applyUrl }>, total }
+
+Notes – app/notes, /notes/[id], /notes/upload
+List – /notes/page.tsx
+- /api/notes (GET) -> { q?, subject?, page, pageSize } -> { items: Array<{ id, title, subject, uploader: { id, name }, pages?, previewUrl, fileType, uploadedAt, likes }>, total }
+Detail – /notes/[id]/page.tsx
+- /api/notes/:id (GET) -> { id, title, subject, description, fileUrl, previewImages[], uploader, tags[], likes, views, createdAt, comments: Array<{ id, user: { id, name, avatar }, text, createdAt }> }
+Upload – /notes/upload/page.tsx
+- /api/notes (POST) (Auth, multipart) -> { title, subject, description?, file: pdf|image[], tags[] } -> { ok, id }
+- /api/notes/:id/like (POST) (Auth) -> { action: "add"|"remove" } -> { ok, liked }
+
+Profile – app/profile/page.tsx (Auth)
+- /api/users/me (GET) -> { id, name, email, avatar, phone?, preferences, joinedAt }
+- /api/users/me (PATCH) (Auth) -> partial fields -> { ok }
+- /api/users/me/activity (GET) (Auth) -> { books[], favorites[], notes[], applications[] }
+
+Resources – app/resources/page.tsx
+- /api/resources (GET) -> { items: Array<{ id, title, category, url, description, icon }>, categories[] }
+
+Schemes – app/schemes/page.tsx
+- /api/schemes (GET) -> { items: Array<{ id, title, summary, eligibility, applyUrl, tags[] }> }
+
+Subscribe – app/subscribe/page.tsx
+- /api/subscribe (POST) -> { email } -> { ok }
+
+Support – app/support/page.tsx and /support/thank-you
+- /api/leads (POST) -> already exists. Fields accepted: { name, email, topic, subject, message, phone?, priority?, department?, prefEmail?, prefWhatsapp?, attachment? } -> { ok }
+
+Tiffin – app/tiffin, /tiffin/[id], /tiffin/[id]/checkout, /tiffin/[id]/checkout/success, /tiffin/onboard, /tiffin/submit
+List – /tiffin/page.tsx
+- /api/tiffin (GET) -> { city?, vegOnly?, priceMin?, priceMax?, page, pageSize } -> { items: Array<{ id, name, cuisine, veg, pricePerMonth, rating, thumbnail, deliveryAreas[] }>, total }
+Detail – /tiffin/[id]/page.tsx
+- /api/tiffin/:id (GET) -> { id, name, images[], description, menuPreview[], veg, pricePlans: Array<{ id, name, price, mealsPerDay }>, rating, vendor: { id, name, phone } }
+Checkout – /tiffin/[id]/checkout/page.tsx
+- /api/tiffin/:id/checkout (POST) (Auth) -> { planId, startDate, addressId?, address?, paymentMethod } -> { clientSecret | checkoutUrl }
+Success – /tiffin/[id]/checkout/success/page.tsx
+- /api/tiffin/orders/:orderId (GET) (Auth) -> { id, status, amount, plan, vendor, placedAt }
+Onboard vendor – /tiffin/onboard/page.tsx
+- /api/tiffin/vendors (POST) (Auth) -> { name, cuisine, veg, phone, address, documents[] } -> { ok, id }
+Submit listing – /tiffin/submit/page.tsx
+- /api/tiffin (POST) (Auth) -> same as vendors or listing create depending on model
+
+Wellbeing – app/wellbeing, /wellbeing/counseling, /wellbeing/chat
+Landing – /wellbeing/page.tsx
+- /api/wellbeing/resources (GET) -> { items: Array<{ id, title, type: article|video|workshop, url, tags[] }> }
+Counseling – /wellbeing/counseling/page.tsx
+- /api/wellbeing/appointments (POST) (Auth) -> { slotId, mode: online|offline, notes? } -> { ok, bookingId }
+- /api/wellbeing/slots (GET) -> { items: Array<{ id, start, end, counselor: { id, name } }> }
+Chat – /wellbeing/chat/page.tsx
+- /api/wellbeing/chat/token (POST) (Auth) -> { } -> { wsUrl|token }
+- /api/wellbeing/chat/messages (GET) (Auth) -> { since? } -> { items: Array<{ id, text, sender: user|counselor, createdAt }> }
+- /api/wellbeing/chat/messages (POST) (Auth) -> { text, attachments?[] } -> { ok, id }
+
+Jobs/Applications (optional future)
+- /api/jobs/:id/apply (POST) (Auth) -> { resumeUrl|file, coverLetter? } -> { ok, applicationId }
+
+Data Models – Suggested Core Types
+- User: { id, name, email, avatar, phone?, role, createdAt }
+- Book: see BookDetail
+- Note: see Notes detail
+- Hostel: see Hostels detail
+- TiffinVendor/Listing: see Tiffin detail
+- Lead: as in /api/leads
+
+Security & Standards
+- Auth: Bearer token in Authorization header or NextAuth session cookies
+- Rate limits on write endpoints
+- Validation errors -> 400 with field-wise messages: { ok: false, errors: { field: message } }
+- Use 201 for created, 204 for deletes, 401/403 for auth/perm, 404 for missing

@@ -41,7 +41,16 @@ const AdsCarousel = dynamic(() => import("@/components/ads/AdsCarousel"), {
   ssr: false,
   loading: () => <div className="w-full max-w-6xl h-[180px] sm:h-[240px] md:h-[300px] rounded-2xl border border-border animate-pulse bg-muted" />,
 })
-const CornerAd = dynamic(() => import("@/components/ads/CornerAd"), { ssr: false })
+const CornerAd = dynamic(() => import("@/components/ads/CornerAd"), {
+  ssr: false,
+  // Render a stable placeholder so server/client markup match
+  loading: () => <div data-slot="corner-ad" aria-hidden />,
+})
+const LeadsWidget = dynamic(() => import("@/components/leads/LeadsWidget"), {
+  ssr: false,
+  // Stable placeholder on server and before hydrate
+  loading: () => <span data-slot="leads-widget" aria-hidden />,
+})
 // Below-the-fold sections (deferred)
 const TiffinSection = dynamic(() => import("@/components/home/TiffinSection"), { ssr: false, loading: () => null })
 const JobsSection = dynamic(() => import("@/components/home/JobsSection"), { ssr: false, loading: () => null })
@@ -50,7 +59,76 @@ const NotesSection = dynamic(() => import("@/components/home/NotesSection"), { s
 const BooksSection = dynamic(() => import("@/components/home/BooksSection"), { ssr: false, loading: () => null })
 const HostelsSection = dynamic(() => import("@/components/home/HostelsSection"), { ssr: false, loading: () => null })
 
+  // Ads: load from API by position with fallback
+  type AdSlide = {
+    id: string
+    href?: string
+    img?: string
+    bg?: string
+    text?: string
+    video?: string
+    poster?: string
+    format: "leaderboard" | "rectangle" | "hero"
+  }
+
+  const fallbackTop: AdSlide[] = [
+    { id: "home_h1", format: "hero", img: "/abstract-geometric-shapes.png", href: "/resources" },
+    { id: "home_h2", format: "hero", img: "/algorithms-textbook.png", href: "/exams" },
+    { id: "home_h3", format: "hero", img: "/calculus-textbook.png", href: "/resources" },
+    { id: "home_h4", format: "hero", img: "/algorithms-textbook-pages.png", href: "/schemes" },
+  ]
+  const fallbackMid: AdSlide[] = [
+    { id: "home_h5", format: "hero", img: "/abstract-geometric-shapes.png", href: "#deals" },
+    { id: "home_h6", format: "hero", img: "/algorithms-textbook-pages.png", href: "/hostels/list" },
+    { id: "home_h7", format: "hero", img: "/student-avatar.png", href: "/notes/upload" },
+  ]
+
 export default function HomePage() {
+  // Ads: hooks must be inside component
+  const [heroTopSlides, setHeroTopSlides] = useState<AdSlide[]>(fallbackTop)
+  const [heroMidSlides, setHeroMidSlides] = useState<AdSlide[]>(fallbackMid)
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadAds() {
+      try {
+        const [topRes, midRes] = await Promise.all([
+          fetch("/api/ads/position/home_hero_top", { cache: "no-store" }),
+          fetch("/api/ads/position/home_hero_mid", { cache: "no-store" }),
+        ])
+        const topJson = await topRes.json().catch(() => ({ ok: false }))
+        const midJson = await midRes.json().catch(() => ({ ok: false }))
+        if (!cancelled) {
+          if (topJson?.ok && Array.isArray(topJson.items) && topJson.items.length > 0) {
+            setHeroTopSlides(topJson.items.map((a: any) => ({
+              id: a.id,
+              href: a.href,
+              img: a.img,
+              bg: a.bg,
+              text: a.text,
+              video: a.video,
+              poster: a.poster,
+              format: a.format ?? "hero",
+            })))
+          }
+          if (midJson?.ok && Array.isArray(midJson.items) && midJson.items.length > 0) {
+            setHeroMidSlides(midJson.items.map((a: any) => ({
+              id: a.id,
+              href: a.href,
+              img: a.img,
+              bg: a.bg,
+              text: a.text,
+              video: a.video,
+              poster: a.poster,
+              format: a.format ?? "hero",
+            })))
+          }
+        }
+      } catch {}
+    }
+    loadAds()
+    return () => { cancelled = true }
+  }, [])
   // Used Books carousel state
   const booksCarouselRef = useRef<HTMLDivElement | null>(null)
   const [booksPaused, setBooksPaused] = useState(false)
@@ -201,15 +279,7 @@ export default function HomePage() {
       {/* Ad: Hero Ad Carousel (images/videos supported) */}
       <section className="py-6 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <AdsCarousel
-            showDots
-            slides={[
-              { id: "home_h1", format: "hero", img: "/abstract-geometric-shapes.png", href: "/resources" },
-              { id: "home_h2", format: "hero", img: "/algorithms-textbook.png", href: "/exams" },
-              { id: "home_h3", format: "hero", img: "/calculus-textbook.png", href: "/resources" },
-              { id: "home_h4", format: "hero", img: "/algorithms-textbook-pages.png", href: "/schemes" },
-            ]}
-          />
+          <AdsCarousel showDots slides={heroTopSlides} />
         </div>
       </section>
 
@@ -219,14 +289,7 @@ export default function HomePage() {
       {/* Ad: Hero Ad Carousel below Upcoming Exams */}
       <section className="py-6 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <AdsCarousel
-            showDots
-            slides={[
-              { id: "home_h5", format: "hero", img: "/abstract-geometric-shapes.png", href: "#deals" },
-              { id: "home_h6", format: "hero", img: "/algorithms-textbook-pages.png", href: "/hostels/list" },
-              { id: "home_h7", format: "hero", img: "/student-avatar.png", href: "/notes/upload" },
-            ]}
-          />
+          <AdsCarousel showDots slides={heroMidSlides} />
         </div>
       </section>
 
@@ -373,6 +436,8 @@ export default function HomePage() {
         media={{ type: "image", src: "/abstract-geometric-shapes.png", alt: "Student Deals" }}
         responsive
       />
+      {/* Floating Leads / Talk-to-Us widget */}
+      <LeadsWidget />
     </div>
   )
 }

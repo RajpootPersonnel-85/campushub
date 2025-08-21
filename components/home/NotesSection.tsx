@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -8,6 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar, Building, Eye, Download, Award, ChevronRight } from "lucide-react"
 
 export default function NotesSection() {
+  const rowRef = useRef<HTMLDivElement | null>(null)
+  const scrollByViewport = (dir: -1 | 1) => {
+    const el = rowRef.current
+    if (!el) return
+    const delta = el.clientWidth * 0.9 * dir
+    el.scrollBy({ left: delta, behavior: "smooth" })
+  }
   return (
     <section id="notes" className="py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
@@ -86,15 +94,49 @@ export default function NotesSection() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-          {[
+        <div className="relative">
+          {/* Arrows */}
+          <button
+            type="button"
+            aria-label="Previous notes"
+            className="hidden sm:flex items-center justify-center absolute -left-2 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full border border-border bg-background/90 shadow hover:bg-accent"
+            onClick={() => scrollByViewport(-1)}
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            aria-label="Next notes"
+            className="hidden sm:flex items-center justify-center absolute -right-2 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full border border-border bg-background/90 shadow hover:bg-accent"
+            onClick={() => scrollByViewport(1)}
+          >
+            ›
+          </button>
+
+          <div
+            ref={rowRef}
+            className="mb-8 flex gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none]"
+            style={{ scrollPaddingInline: 16 }}
+            onWheel={(e) => {
+              // Horizontal wheel for trackpads
+              if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return
+              const el = rowRef.current
+              if (!el) return
+              el.scrollLeft += e.deltaY
+              e.preventDefault()
+            }}
+          >
+            {[
             { subject: "Computer Science", semester: "Semester 1", title: "Data Structures & Algorithms", author: "Ankit S.", authorBadge: "Top Contributor", uploaded: "2 days ago", verified: true, views: 145, downloads: 45, rating: 4.8, college: "Prof. Gupta" },
             { subject: "Computer Science", semester: "Semester 2", title: "Data Structures & Algorithms", author: "Ankit S.", authorBadge: null, uploaded: "2 days ago", verified: true, views: 170, downloads: 55, rating: 4.9, college: "Prof. Gupta" },
             { subject: "Computer Science", semester: "Semester 3", title: "Data Structures & Algorithms", author: "Ankit S.", authorBadge: null, uploaded: "2 days ago", verified: false, views: 195, downloads: 65, rating: 4.7, college: "Prof. Gupta" },
             { subject: "Computer Science", semester: "Semester 4", title: "Data Structures & Algorithms", author: "Ankit S.", authorBadge: null, uploaded: "2 days ago", verified: true, views: 220, downloads: 75, rating: 4.8, college: "Prof. Gupta" },
             { subject: "Computer Science", semester: "Semester 5", title: "Data Structures & Algorithms", author: "Ankit S.", authorBadge: null, uploaded: "2 days ago", verified: true, views: 245, downloads: 85, rating: 4.9, college: "Prof. Gupta" },
           ].map((note, index) => (
-            <Card key={index} className="hover:shadow-lg transition-shadow bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200">
+            <Card
+              key={index}
+              className="hover:shadow-lg transition-shadow bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200 snap-start shrink-0 min-w-[280px] sm:min-w-[320px] md:min-w-[360px]"
+            >
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between mb-2">
                   <Badge variant="secondary" className="bg-purple-100 text-purple-800">{note.subject}</Badge>
@@ -153,6 +195,7 @@ export default function NotesSection() {
               </CardContent>
             </Card>
           ))}
+          </div>
         </div>
 
         <Card className="bg-primary/5 border-primary/20">
