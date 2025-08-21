@@ -1,11 +1,73 @@
-import CompareClient from "@/components/careers/CompareClient"
+"use client"
 
-export default function CareersComparePage() {
-  return <CompareClient />
-}
+import { useEffect, useMemo, useState, useDeferredValue, useRef, useTransition } from "react"
+import type { CSSProperties } from "react"
+import Link from "next/link"
+import dynamic from "next/dynamic"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Label } from "@/components/ui/label"
+import { CAREER_CATALOG, CATEGORIES, CareerKey, growthSignal } from "@/lib/careers-data"
+import type { AdSlide } from "@/components/ads/AdsCarousel"
+const AdsCarousel = dynamic(() => import("@/components/ads/AdsCarousel"), { ssr: false })
+const TrendGraph = dynamic(() => import("@/components/careers/TrendGraph"), { ssr: false })
+import { TrendingUp, TrendingDown, Minus, Search, FileDown, ShieldCheck } from "lucide-react"
+
+export default function CompareClient() {
+  const [_isPending, startTransition] = useTransition()
+  const [category, setCategory] = useState<string>("Engineering")
+  const [careerKey, setCareerKey] = useState<string>("")
+  const [query, setQuery] = useState("")
+  const deferredQuery = useDeferredValue(query)
+  const [selected, setSelected] = useState<CareerKey[]>(["software_development", "data_science"]) // defaults
+  const [compared, setCompared] = useState<CareerKey[]>(selected)
+  const [visible, setVisible] = useState<Record<CareerKey, boolean>>({
+    software_development: true,
+    data_science: true,
+    civil_engineering: false,
+    mechanical_engineering: false,
+    graphic_design: false,
+    ux_ui_design: false,
+    mbbs: false,
+    nursing: false,
+    pharmacy: false,
+    ca: false,
+    mba_finance: false,
+    cfa: false,
+    lawyer: false,
+    commerce_general: false,
+    arts_general: false,
+  })
+
+  // Build internships/jobs slides for carousel (screen only)
+  const jobSlides: AdSlide[] = useMemo(() => {
+    const slides: AdSlide[] = []
+    const keys = compared.length ? compared : selected
+    const mk = (id: string, text: string, href: string, bg: string): AdSlide => ({ id, text, href, bg, format: "hero" })
+    keys.forEach((k) => {
+      const name = CAREER_CATALOG[k].name
+      const q = encodeURIComponent(name)
+      slides.push(mk(`${k}-li`, `${name} — LinkedIn Jobs`, `https://www.linkedin.com/jobs/search/?keywords=${q}`, "linear-gradient(90deg,#0a66c2,#004182)"))
+      slides.push(mk(`${k}-is`, `${name} — Internshala`, `https://internshala.com/internships/keywords-${q}`, "linear-gradient(90deg,#2f57e5,#1b35a8)"))
+      slides.push(mk(`${k}-nk`, `${name} — Naukri`, `https://www.naukri.com/${q}-jobs`, "linear-gradient(90deg,#1f88e5,#155a99)"))
+      slides.push(mk(`${k}-id`, `${name} — Indeed`, `https://in.indeed.com/jobs?q=${q}`, "linear-gradient(90deg,#3b82f6,#1e40af)"))
+    })
+    return slides
+  }, [compared, selected])
+
+  // Keep visibility keys synced with compared list (default new ones to true)
+  useEffect(() => {
+    setVisible((prev) => {
+      const next: Record<CareerKey, boolean> = { ...prev }
+      const list: CareerKey[] = Array.isArray(compared) ? (compared as CareerKey[]) : []
+      list.forEach((k: CareerKey) => {
         if (next[k] === undefined) next[k] = true
       })
-      // Optionally hide keys no longer compared
       ;(Object.keys(next) as CareerKey[]).forEach((k: CareerKey) => {
         if (!list.includes(k)) next[k] = false
       })
@@ -15,15 +77,14 @@ export default function CareersComparePage() {
 
   // Quiz state and recommendations
   const [quiz, setQuiz] = useState({
-    interest: "tech", // tech | business | health | design | core
-    workStyle: "build", // build | analyze | help | create
-    salaryFocus: "balanced", // high | balanced | not_important
-    studyLength: "medium", // short | medium | long
+    interest: "tech",
+    workStyle: "build",
+    salaryFocus: "balanced",
+    studyLength: "medium",
   })
   const [recs, setRecs] = useState<CareerKey[]>([])
   const [loading, setLoading] = useState(false)
 
-  // Reset selections to defaults
   const resetSelections = () => {
     const defaults: CareerKey[] = ["software_development", "data_science"]
     setSelected(defaults)
@@ -33,7 +94,6 @@ export default function CareersComparePage() {
   function scoreCareer(key: CareerKey) {
     const c = CAREER_CATALOG[key]
     let score = 0
-    // Interest -> category mapping
     const interestMap: Record<string, string[]> = {
       tech: ["Engineering"],
       business: ["Commerce"],
@@ -43,7 +103,6 @@ export default function CareersComparePage() {
     }
     if (interestMap[quiz.interest]?.includes(c.category)) score += 3
 
-    // Work style -> skills keywords
     const styleMap: Record<string, string[]> = {
       build: ["Java", "Python", "Cloud", "DevOps", "CAD", "Manufacturing"],
       analyze: ["AI", "ML", "Data", "Finance", "Audit", "Law"],
@@ -55,17 +114,14 @@ export default function CareersComparePage() {
       for (const w of styleWords) if (s.toLowerCase().includes(w.toLowerCase())) score += 1.2
     })
 
-    // Salary focus approximated via avgSalaryIndia and international growth
     if (quiz.salaryFocus === "high") score += Math.max(0, c.international.globalGrowth) / 4
     if (quiz.salaryFocus === "balanced") score += Math.max(0, c.growthRate) / 6
 
-    // Study length heuristic by category
     const longCats = new Set(["Medical"])
-    const shortCats = new Set(["Arts", "Commerce"]) // relative
+    const shortCats = new Set(["Arts", "Commerce"])
     if (quiz.studyLength === "long" && longCats.has(c.category)) score += 2
     if (quiz.studyLength === "short" && shortCats.has(c.category)) score += 1.5
 
-    // Base growth weight
     score += Math.max(0, c.growthRate) / 8
     return score
   }
@@ -178,14 +234,14 @@ export default function CareersComparePage() {
     setMounted(true)
   }, [])
 
-  // Defer non-critical UI (carousel, quiz) slightly to reduce initial main-thread work
+  // Defer non-critical UI
   const [deferNonCritical, setDeferNonCritical] = useState(true)
   useEffect(() => {
     const t = setTimeout(() => setDeferNonCritical(false), 300)
     return () => clearTimeout(t)
   }, [])
 
-  // Shareable permalink: read on mount and set selection
+  // Shareable permalink
   useEffect(() => {
     if (typeof window === "undefined") return
     const params = new URLSearchParams(window.location.search)
@@ -242,7 +298,7 @@ export default function CareersComparePage() {
             </div>
           </div>
 
-          {/* Print header (shown only on print) */}
+          {/* Print header */}
           <div className="hidden print:block">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">Career vs Demand Comparison</h2>
@@ -435,7 +491,7 @@ export default function CareersComparePage() {
           </Card>
           </div>
 
-          {/* Print footer (shown only on print) */}
+          {/* Print footer */}
           <div className="hidden print:block mt-6">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>campushub • https://localhost:3000/careers/compare</span>
@@ -551,7 +607,7 @@ export default function CareersComparePage() {
           </Card>
 
 
-          {/* Print Header (visible only when printing) */}
+          {/* Print Header */}
           <Card className="hidden print:block print:shadow-none print:border-0">
             <CardHeader className="pb-2">
               <CardTitle className="text-xl">CampusHub — Career Comparison Report</CardTitle>
@@ -763,7 +819,6 @@ export default function CareersComparePage() {
                   </>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground mt-3">Note: CoL reference (lower is easier): India 1.0, USA ≈ 2.1, Canada ≈ 1.8, Dubai ≈ 1.7. Salaries shown are typical early-career bands.</p>
             </CardContent>
           </Card>
 
@@ -791,13 +846,11 @@ export default function CareersComparePage() {
                   <>
                 {compared.map((k) => {
                   const c = CAREER_CATALOG[k]
-                  // Derive a simple stability score from local and global growth, clamped to 0-100
                   const raw = (c.growthRate + c.international.globalGrowth) / 2
                   const stability = Math.max(0, Math.min(100, Math.round(((raw + 20) / 40) * 100)))
                   const sig = growthSignal(c.growthRate)
                   const tone = sig === "green" ? "text-green-600" : sig === "red" ? "text-red-600" : "text-amber-600"
                   const suited = c.skills.slice(0, 2).join(" / ") || c.category
-                  // Suggest 1-2 alternatives within same category by higher growth
                   const alternatives = Object.values(CAREER_CATALOG)
                     .filter((x) => x.category === c.category && x.key !== c.key)
                     .sort((a, b) => b.growthRate - a.growthRate)
